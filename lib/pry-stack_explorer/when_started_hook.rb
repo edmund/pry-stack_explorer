@@ -83,7 +83,7 @@ module PryStackExplorer
 
     # @return [Array<Array<Binding, Fixnum>>]
     def internal_frames_with_indices(bindings)
-      bindings.each_with_index.select do |b, i|
+      bindings.each_with_index.select do |b, _i|
         b.frame_type == :method &&
           safe_send(b.eval("self"), :equal?, Pry) &&
           safe_send(b.eval("__method__"), :==, :start)

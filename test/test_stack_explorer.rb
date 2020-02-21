@@ -44,7 +44,7 @@ describe PryStackExplorer do
         def o.bang() Pry.start(binding) end
 
         redirect_pry_io(InputTester.new(
-                                        "@frames = SE.frame_manager(_pry_).bindings.take(3)",
+                                        "@frames = SE.frame_manager(pry_instance).bindings.take(3)",
                                         "exit-all")) do
           o.bing
         end
@@ -136,7 +136,7 @@ describe PryStackExplorer do
 
       it 'should raise if custom call stack does not contain bindings' do
         o = OpenStruct.new
-        redirect_pry_io(StringIO.new("self.errors = _pry_.hooks.errors\nexit\n")) do
+        redirect_pry_io(StringIO.new("self.errors = pry_instance.hooks.errors\nexit\n")) do
           Pry.start(o, :call_stack => [1, 2, 3])
         end
         o.errors.first.is_a?(ArgumentError).should == true
@@ -144,7 +144,7 @@ describe PryStackExplorer do
 
       it 'should raise if custom call stack is empty' do
         o = OpenStruct.new
-        redirect_pry_io(StringIO.new("self.errors = _pry_.hooks.errors\nexit\n")) do
+        redirect_pry_io(StringIO.new("self.errors = pry_instance.hooks.errors\nexit\n")) do
           Pry.start o, :call_stack => []
         end
         o.errors.first.is_a?(ArgumentError).should == true
@@ -177,10 +177,10 @@ describe PryStackExplorer do
       end
 
       it 'should save prior binding in FrameManager instance' do
-        _pry_ = Pry.new
-        _pry_.binding_stack.push(b=binding)
-        PryStackExplorer.create_and_push_frame_manager(@bindings, _pry_)
-        PryStackExplorer.frame_manager(_pry_).prior_binding.should == b
+        pry_instance = Pry.new
+        pry_instance.binding_stack.push(b=binding)
+        PryStackExplorer.create_and_push_frame_manager(@bindings, pry_instance)
+        PryStackExplorer.frame_manager(pry_instance).prior_binding.should == b
       end
 
       describe ":initial_frame option" do
@@ -206,10 +206,10 @@ describe PryStackExplorer do
       end
 
       it 'should save prior backtrace in FrameManager instance' do
-        _pry_ = Pry.new
-        _pry_.backtrace = ["my backtrace"]
-        PryStackExplorer.create_and_push_frame_manager(@bindings, _pry_)
-        PryStackExplorer.frame_manager(_pry_).prior_backtrace.should == _pry_.backtrace
+        pry_instance = Pry.new
+        pry_instance.backtrace = ["my backtrace"]
+        PryStackExplorer.create_and_push_frame_manager(@bindings, pry_instance)
+        PryStackExplorer.frame_manager(pry_instance).prior_backtrace.should == pry_instance.backtrace
       end
 
       it  "should create and push multiple FrameManagers" do
@@ -331,7 +331,7 @@ describe PryStackExplorer do
         end
       end
 
-      describe "_pry_.backtrace" do
+      describe "pry_instance.backtrace" do
         it "should restore backtrace when frame is popped" do
           p1 = Pry.new
           bindings = [binding, binding]
@@ -374,7 +374,7 @@ describe PryStackExplorer do
         PE.frame_hash.has_key?(@pry_instance).should == false
       end
 
-      describe "_pry_.backtrace" do
+      describe "pry_instance.backtrace" do
         it "should restore backtrace to initial one when frame managers are cleared" do
           p1 = Pry.new
           bindings = [binding, binding]

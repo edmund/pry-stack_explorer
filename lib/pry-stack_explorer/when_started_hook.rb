@@ -20,8 +20,8 @@ module PryStackExplorer
       bindings
     end
 
-    def call(target, options, _pry_)
-      target ||= _pry_.binding_stack.first if _pry_
+    def call(target, options, pry_instance)
+      target ||= pry_instance.binding_stack.first if pry_instance
       options = {
         :call_stack    => true,
         :initial_frame => 0
@@ -39,7 +39,7 @@ module PryStackExplorer
         bindings = caller_bindings(target)
       end
 
-      PryStackExplorer.create_and_push_frame_manager bindings, _pry_, :initial_frame => options[:initial_frame]
+      PryStackExplorer.create_and_push_frame_manager bindings, pry_instance, :initial_frame => options[:initial_frame]
     end
 
     private

@@ -21,20 +21,20 @@ module PryStackExplorer
     end
 
     # Return the complete frame manager stack for the Pry instance
-    # @param [Pry] _pry_ The Pry instance associated with the frame
+    # @param [Pry] pry_instance The Pry instance associated with the frame
     #   managers
     # @return [Array] The stack of Pry::FrameManager objections
-    def frame_managers(_pry_)
-      frame_hash[_pry_]
+    def frame_managers(pry_instance)
+      frame_hash[pry_instance]
     end
 
     # Create a `Pry::FrameManager` object and push it onto the frame
-    # manager stack for the relevant `_pry_` instance.
+    # manager stack for the relevant `pry_instance` instance.
     # @param [Array] bindings The array of bindings (frames)
-    # @param [Pry] _pry_ The Pry instance associated with the frame manager
-    def create_and_push_frame_manager(bindings, _pry_, options={})
-      fm = FrameManager.new(bindings, _pry_)
-      frame_hash[_pry_].push fm
+    # @param [Pry] pry_instance The Pry instance associated with the frame manager
+    def create_and_push_frame_manager(bindings, pry_instance, options={})
+      fm = FrameManager.new(bindings, pry_instance)
+      frame_hash[pry_instance].push fm
       push_helper(fm, options)
       fm
     end
@@ -54,52 +54,52 @@ module PryStackExplorer
     private :push_helper
 
     # Delete the currently active frame manager
-    # @param [Pry] _pry_ The Pry instance associated with the frame
+    # @param [Pry] pry_instance The Pry instance associated with the frame
     #   managers.
     # @return [Pry::FrameManager] The popped frame manager.
-    def pop_frame_manager(_pry_)
-      return if frame_managers(_pry_).empty?
+    def pop_frame_manager(pry_instance)
+      return if frame_managers(pry_instance).empty?
 
-      popped_fm = frame_managers(_pry_).pop
-      pop_helper(popped_fm, _pry_)
+      popped_fm = frame_managers(pry_instance).pop
+      pop_helper(popped_fm, pry_instance)
       popped_fm
     end
 
     # Restore the Pry instance to operate on the previous
     # binding. Also responsible for restoring Pry instance's backtrace.
     # @param [Pry::FrameManager] popped_fm The recently popped frame manager.
-    # @param [Pry] _pry_ The Pry instance associated with the frame managers.
-    def pop_helper(popped_fm, _pry_)
-      if frame_managers(_pry_).empty?
-        if _pry_.binding_stack.empty?
-          _pry_.binding_stack.push popped_fm.prior_binding
+    # @param [Pry] pry_instance The Pry instance associated with the frame managers.
+    def pop_helper(popped_fm, pry_instance)
+      if frame_managers(pry_instance).empty?
+        if pry_instance.binding_stack.empty?
+          pry_instance.binding_stack.push popped_fm.prior_binding
         else
-          _pry_.binding_stack[-1] = popped_fm.prior_binding
+          pry_instance.binding_stack[-1] = popped_fm.prior_binding
         end
 
-        frame_hash.delete(_pry_)
+        frame_hash.delete(pry_instance)
       else
-        frame_manager(_pry_).refresh_frame(false)
+        frame_manager(pry_instance).refresh_frame(false)
       end
 
       # restore backtrace
-      _pry_.backtrace = popped_fm.prior_backtrace
+      pry_instance.backtrace = popped_fm.prior_backtrace
     end
 
     private :pop_helper
 
     # Clear the stack of frame managers for the Pry instance
-    # @param [Pry] _pry_ The Pry instance associated with the frame managers
-    def clear_frame_managers(_pry_)
-      pop_frame_manager(_pry_) until frame_managers(_pry_).empty?
-      frame_hash.delete(_pry_) # this line should be unnecessary!
+    # @param [Pry] pry_instance The Pry instance associated with the frame managers
+    def clear_frame_managers(pry_instance)
+      pop_frame_manager(pry_instance) until frame_managers(pry_instance).empty?
+      frame_hash.delete(pry_instance) # this line should be unnecessary!
     end
 
     alias_method :delete_frame_managers, :clear_frame_managers
 
     # @return [PryStackExplorer::FrameManager] The currently active frame manager
-    def frame_manager(_pry_)
-      frame_hash[_pry_].last
+    def frame_manager(pry_instance)
+      frame_hash[pry_instance].last
     end
 
     # Simple test to check whether two `Binding` objects are equal.
@@ -115,8 +115,8 @@ module PryStackExplorer
   end
 end
 
-Pry.config.hooks.add_hook(:after_session, :delete_frame_manager) do |_, _, _pry_|
-  PryStackExplorer.clear_frame_managers(_pry_)
+Pry.config.hooks.add_hook(:after_session, :delete_frame_manager) do |_, _, pry_instance|
+  PryStackExplorer.clear_frame_managers(pry_instance)
 end
 
 Pry.config.hooks.add_hook(:when_started, :save_caller_bindings, PryStackExplorer::WhenStartedHook.new)
@@ -127,9 +127,9 @@ Pry.config.commands.import PryStackExplorer::Commands
 # monkey-patch the whereami command to show some frame information,
 # useful for navigating stack.
 Pry.config.hooks.add_hook(:before_whereami, :stack_explorer) do
-  if PryStackExplorer.frame_manager(_pry_) && !internal_binding?(target)
-    bindings      = PryStackExplorer.frame_manager(_pry_).bindings
-    binding_index = PryStackExplorer.frame_manager(_pry_).binding_index
+  if PryStackExplorer.frame_manager(pry_instance) && !internal_binding?(target)
+    bindings      = PryStackExplorer.frame_manager(pry_instance).bindings
+    binding_index = PryStackExplorer.frame_manager(pry_instance).binding_index
 
     output.puts "\n"
     output.puts "#{Pry::Helpers::Text.bold('Frame number:')} #{binding_index}/#{bindings.size - 1}"

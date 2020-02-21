@@ -346,7 +346,7 @@ describe PryStackExplorer::Commands do
         call_stack   = [o.alpha, o.beta, o.gamma]
         (1..3).each_with_index do |v, idx|
           redirect_pry_io(InputTester.new("frame -#{v}",
-                                          "@frame_number = PryStackExplorer.frame_manager(_pry_).binding_index",
+                                          "@frame_number = PryStackExplorer.frame_manager(pry_instance).binding_index",
                                           "exit-all"), out=StringIO.new) do
             Pry.start(o, :call_stack => call_stack)
           end
